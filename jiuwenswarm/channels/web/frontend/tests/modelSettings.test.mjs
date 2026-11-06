@@ -162,7 +162,11 @@ test('switching providers clears credentials before applying the next connection
   };
   const presetDraft = applyVendorSelection(startingDraft, vendorSelectionKey('token_plan', 'alibaba'), catalog);
   assert.equal(presetDraft.api_key, '');
-  assert.equal(applyVendorSelection(startingDraft, CUSTOM_VENDOR_SELECTION, catalog).api_key, '');
+  const customDraft = applyVendorSelection(startingDraft, CUSTOM_VENDOR_SELECTION, catalog);
+  assert.equal(customDraft.api_key, '');
+  // Custom gateways fetch their own catalogue, so the field stays a dropdown;
+  // manual entry is preserved through allowCustomValue in the dialog.
+  assert.equal(customDraft.model_input_mode, 'options');
 
   const accountDraft = applyVendorSelection(startingDraft, OPENAI_ACCOUNT_SELECTION, catalog);
   assert.equal(accountDraft.vendor_selection, OPENAI_ACCOUNT_SELECTION);
@@ -712,6 +716,7 @@ test('model Settings sources use the required RPCs without hardcoded vendor opti
   const definition = source('src/features/settings/modules/models/definition.ts');
   const tabLayout = source('src/features/settings/components/SettingsTabLayout.tsx');
   const dialog = source('src/features/settings/modules/models/ModelDialog.tsx');
+  const customCatalog = source('src/features/settings/modules/models/customModelCatalog.ts');
   const provider = source('src/features/settings/modules/models/ModelProviderSelect.tsx');
   const account = source('src/features/settings/modules/models/OpenAIAccountField.tsx');
   const accountCss = source('src/features/settings/modules/models/OpenAIAccountField.css');
@@ -771,6 +776,9 @@ test('model Settings sources use the required RPCs without hardcoded vendor opti
   assert.match(operations, /model\.is_agentos !== true/);
   assert.doesNotMatch(page, /config\.save_all/);
   assert.match(dialog, /'vendors\.fetch_models'/);
+  // The custom-catalogue method name lives in the module shared with MediaModelConfigDialog.
+  assert.match(dialog, /CUSTOM_FETCH_METHOD/);
+  assert.match(customCatalog, /'vendors\.fetch_custom_models'/);
   assert.match(dialog, /'config\.validate_model'/);
   assert.match(dialog, /name: 'protocol',[\s\S]{0,160}component: 'select'/);
   assert.doesNotMatch(dialog, /name: 'protocol',[\s\S]{0,160}component: 'radioGroup'/);

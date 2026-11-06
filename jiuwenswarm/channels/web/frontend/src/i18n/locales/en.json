@@ -691,6 +691,9 @@
       "noPresetModels": "Open the list or refresh to fetch the latest models",
       "noPresetModelsApiKeyRequired": "Enter an API key before fetching the model list",
       "noPresetModelsNoEndpoint": "This provider does not expose a model-list endpoint",
+      "noCustomModels": "Enter the endpoint URL and API key, then open the list or refresh to fetch models",
+      "noCustomModelsApiBaseRequired": "Enter the endpoint URL before fetching the model list",
+      "noCustomModelsApiKeyRequired": "Enter an API key before fetching the model list",
       "fetchModelsLoading": "Fetching...",
       "fetchModelsRemote": "Fetched {{count}} models from the provider",
       "fetchGenerationModelsRemote": "Fetched {{count}} generation models; listing does not confirm account access",
@@ -700,8 +703,13 @@
       "fetchModelsUnrecognizedResult": "The provider returned an unrecognized model-list source or reason",
       "fetchReasons": {
         "noEndpoint": "This provider does not expose a model-list endpoint",
+        "apiBaseRequired": "Enter the endpoint URL to fetch the latest models",
+        "apiBaseInvalid": "The endpoint URL is invalid; it must be an http(s) URL",
         "apiKeyRequired": "Enter an API key to fetch the latest models",
+        "apiKeyTooLong": "The API key is too long; shorten it and retry",
         "remoteFailed": "The remote request failed or returned no models",
+        "nonJsonBody": "The remote response is not JSON",
+        "bodyTooLarge": "The remote response is too large",
         "remoteAuthFailed": "Invalid API key or auth mismatch (HTTP 401/403)",
         "remoteRateLimited": "Rate limited (HTTP 429), retry later"
       },

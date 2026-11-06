@@ -53,6 +53,7 @@ from openjiuwen_protocol.logging_config import (
     LOG_CONFIG_OP_FIELD,
 )
 from jiuwenswarm.common.agentos_runtime import is_agentos_runtime
+from jiuwenswarm.common.extension_dir_config import migrate_extension_dirs
 from jiuwenswarm.common.runtime_log_filter import install_runtime_log_filter
 from jiuwenswarm.enterprise import is_enterprise
 
@@ -1577,6 +1578,10 @@ def prepare_runtime_workspace(
     if migrate_config:
         ensure_config_migrated_from_template(workspace_dir)
     ensure_default_builtin_skills()
+    # Persist an absolute extension search dir before the children spawn: the
+    # template default is relative to the Gateway's cwd, which is this data
+    # root, so bundled extensions are otherwise never discovered.
+    migrate_extension_dirs(workspace_dir / "config" / ".env")
 
 
 def _close_log_handlers() -> None:
