@@ -1712,6 +1712,11 @@ def init_user_workspace(
     print(f"[jiuwenswarm-init] 将使用语言 / Language: {lang}")
     diff_result = prepare_workspace(overwrite, preferred_language=lang, workspace_dir=workspace_dir)
     _print_diff_summary(diff_result, overwrite)
+    # The standalone Gateway entrypoint prepares its own workspace and never
+    # calls prepare_runtime_workspace, so the absolute extension directory has
+    # to be in place after init or that deployment silently loses the bundled
+    # extensions. Re-running init is also the recovery path after an upgrade.
+    migrate_extension_dirs(workspace_dir / "config" / ".env")
 
     return workspace_dir
 

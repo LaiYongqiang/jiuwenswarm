@@ -163,7 +163,15 @@ def migrate_extension_dirs(
             # explicit choice.
             still_ours = bool(recorded) and recorded == persisted_value
             if still_ours:
-                value = environment_value or packaged_value
+                # A child process inherits the previous start's value through
+                # os.environ (the supervisor copies the whole environment), so an
+                # environment value that merely echoes our own record is not an
+                # operator override. Treating it as one would pin the search path
+                # to an install that has since moved and drop the marker, leaving
+                # no later start able to correct it.
+                inherited = environment_value == recorded
+                override = "" if inherited else environment_value
+                value = override or packaged_value
             else:
                 value = persisted_value or environment_value or packaged_value
             if not value:

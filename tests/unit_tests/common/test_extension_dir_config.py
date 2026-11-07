@@ -253,3 +253,55 @@ def test_existing_env_file_keeps_its_mode(tmp_path: Path) -> None:
     migrate_extension_dirs(env_path, environ={})
 
     assert (env_path.stat().st_mode & 0o777) == 0o600
+
+
+def test_inherited_environment_value_does_not_pin_the_moved_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A child inherits the previous start's value; that is not an override.
+
+    The supervisor spawns the Gateway with a copy of ``os.environ``, so the
+    value this module wrote last start comes back in the environment. If it were
+    read as an operator choice, a moved install would keep pointing at the old
+    directory forever and the managed marker would be dropped.
+    """
+    old_install = tmp_path / "old" / "jiuwenswarm" / "extensions"
+    new_install = tmp_path / "new" / "jiuwenswarm" / "extensions"
+    old_install.mkdir(parents=True)
+    new_install.mkdir(parents=True)
+    env_path = tmp_path / ".env"
+
+    monkeypatch.setattr(
+        extension_dir_config, "packaged_extensions_dir", lambda: old_install
+    )
+    assert migrate_extension_dirs(env_path, environ={}) == str(old_install)
+
+    monkeypatch.setattr(
+        extension_dir_config, "packaged_extensions_dir", lambda: new_install
+    )
+    # Second start after the install moved, with the stale value inherited.
+    assert migrate_extension_dirs(
+        env_path, environ={EXTENSION_DIRS_ENV: str(old_install)}
+    ) == str(new_install)
+    # And a further clean start must not fall back to the old directory either.
+    assert migrate_extension_dirs(env_path, environ={}) == str(new_install)
+    assert dotenv_values(env_path)[EXTENSION_DIRS_ENV] == str(new_install)
+    assert str(old_install) not in env_path.read_text(encoding="utf-8")
+
+
+def test_a_distinct_environment_value_still_overrides_a_managed_value(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only the value we recorded is treated as inherited."""
+    packaged = tmp_path / "install" / "jiuwenswarm" / "extensions"
+    packaged.mkdir(parents=True)
+    env_path = tmp_path / ".env"
+    monkeypatch.setattr(
+        extension_dir_config, "packaged_extensions_dir", lambda: packaged
+    )
+    assert migrate_extension_dirs(env_path, environ={}) == str(packaged)
+
+    assert migrate_extension_dirs(
+        env_path, environ={EXTENSION_DIRS_ENV: "/opt/operator-exts"}
+    ) == "/opt/operator-exts"
+    assert dotenv_values(env_path)[EXTENSION_DIRS_ENV] == "/opt/operator-exts"
