@@ -711,7 +711,9 @@
         "nonJsonBody": "远端返回的内容不是 JSON",
         "bodyTooLarge": "远端返回内容过大",
         "remoteAuthFailed": "API Key 无效或鉴权方式不符（HTTP 401/403）",
-        "remoteRateLimited": "远端限流（HTTP 429），请稍后重试"
+        "remoteNotFound": "接口地址不存在（HTTP 404），请检查地址路径是否正确",
+        "remoteRateLimited": "远端限流（HTTP 429），请稍后重试",
+        "remoteServerError": "远端服务异常（HTTP 5xx），请稍后重试或联系网关管理员"
       },
       "vendorGroups": {
         "token_plan": "Token Plan",

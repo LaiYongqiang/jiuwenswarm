@@ -223,7 +223,10 @@ export function ModelDialog({
     const next = applyModelProtocol(form.getValues(), protocol, catalog);
     applyModelDraft(next);
     // The dedupe key includes protocol for custom endpoints, so options fetched
-    // with the previous protocol are no longer valid.
+    // with the previous protocol are no longer valid. Drop the dedupe entries too:
+    // a key kept from the previous protocol would make the next open short-circuit
+    // and leave the list empty while the hint still says a fetch is possible.
+    if (next.vendor_selection === CUSTOM_VENDOR_SELECTION) fetchedModelLists.current.clear();
     const nextOptions = next.vendor_selection === CUSTOM_VENDOR_SELECTION ? updateModelOptions([]) : modelOptions;
     setFetchStatus(describeSelectionStatus(next.vendor_selection, next.api_base, next.api_key, nextOptions));
   };

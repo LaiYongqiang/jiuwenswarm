@@ -21,6 +21,10 @@ import {
 } from '../node_modules/.cache/settings-refactor/modules/models/modelAdapters.js';
 import { validateModelDraft } from '../node_modules/.cache/settings-refactor/modules/models/modelValidation.js';
 import {
+  describeFetchReason,
+  getCustomModelFetchKey,
+} from '../node_modules/.cache/settings-refactor/modules/models/customModelCatalog.js';
+import {
   LOGIN_MODEL_SOURCE,
   getEditableModels,
   getModelDisplayGroups,
@@ -966,4 +970,69 @@ test('model dialog uses provider terminology and validates as part of confirmati
   assert.equal(en.settingsPanel.models.testingConnection, 'Testing connection…');
   assert.equal(en.settingsPanel.models.savingModel, 'Saving…');
   assert.equal(en.settingsPanel.models.continueSave, 'Ignore test and save');
+});
+
+test('custom gateway fetch failures map to localized copy instead of raw English phrases', () => {
+  const zh = JSON.parse(source('src/i18n/locales/zh.json'));
+  const en = JSON.parse(source('src/i18n/locales/en.json'));
+  // A keyed translator, so a missing locale key surfaces as its own name rather
+  // than silently falling back to the phrase.
+  const translate = (locale) => (key) => {
+    const value = key.split('.').reduce((node, part) => node?.[part], locale);
+    return typeof value === 'string' ? value : `MISSING:${key}`;
+  };
+
+  // Mapped exactly: the key path and the copy must agree in both locales.
+  assert.equal(
+    describeFetchReason('remote returned HTTP 404', translate(zh)),
+    zh.settingsPanel.models.fetchReasons.remoteNotFound,
+  );
+  assert.equal(
+    describeFetchReason('remote returned HTTP 401', translate(zh)),
+    zh.settingsPanel.models.fetchReasons.remoteAuthFailed,
+  );
+  // Unenumerated 5xx family: matched by prefix, so 500/502/503 all localize.
+  for (const status of ['500', '502', '503']) {
+    assert.equal(
+      describeFetchReason(`remote returned HTTP ${status}`, translate(zh)),
+      zh.settingsPanel.models.fetchReasons.remoteServerError,
+    );
+    assert.equal(
+      describeFetchReason(`remote returned HTTP ${status}`, translate(en)),
+      en.settingsPanel.models.fetchReasons.remoteServerError,
+    );
+  }
+  // Unmapped 4xx statuses still localize rather than leaking the raw phrase.
+  assert.equal(
+    describeFetchReason('remote returned HTTP 400', translate(zh)),
+    zh.settingsPanel.models.fetchReasons.remoteFailed,
+  );
+  // A reason unknown to both tables is shown verbatim, which keeps new plugin
+  // reasons debuggable instead of collapsing into a generic message.
+  assert.equal(describeFetchReason('some future reason', translate(zh)), 'some future reason');
+  // Missing reason still yields the generic failure copy.
+  assert.equal(describeFetchReason(undefined, translate(zh)), zh.settingsPanel.models.fetchModelsFailed);
+  // Chinese copy must not be the English original.
+  for (const key of ['remoteNotFound', 'remoteServerError']) {
+    assert.notEqual(zh.settingsPanel.models.fetchReasons[key], en.settingsPanel.models.fetchReasons[key]);
+    assert.ok(zh.settingsPanel.models.fetchReasons[key].length > 0);
+  }
+});
+
+test('the fetch dedupe key separates protocols so a switch never reuses the other protocol list', () => {
+  const openai = getCustomModelFetchKey('https://gw.example/v1', 'sk-1', 'openai');
+  const anthropic = getCustomModelFetchKey('https://gw.example/v1', 'sk-1', 'anthropic');
+  assert.notEqual(openai, anthropic);
+  // Trimming keeps the same endpoint/key from splitting into two cache entries.
+  assert.equal(openai, getCustomModelFetchKey('  https://gw.example/v1  ', ' sk-1 ', 'openai'));
+  // A different endpoint or key is a different list.
+  assert.notEqual(openai, getCustomModelFetchKey('https://gw.example/v2', 'sk-1', 'openai'));
+  assert.notEqual(openai, getCustomModelFetchKey('https://gw.example/v1', 'sk-2', 'openai'));
+  // Switching back to a protocol whose entry was cleared must fetch again: the
+  // dialog drops these entries on protocol change, so a stale key cannot survive.
+  const dialog = source('src/features/settings/modules/models/ModelDialog.tsx');
+  assert.match(
+    dialog,
+    /CUSTOM_VENDOR_SELECTION\) fetchedModelLists\.current\.clear\(\)/,
+  );
 });

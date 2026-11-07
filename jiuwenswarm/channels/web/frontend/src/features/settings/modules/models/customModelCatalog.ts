@@ -29,8 +29,21 @@ export const FETCH_REASON_KEYS: Record<string, string> = {
   'remote response body too large': 'bodyTooLarge',
   'remote returned HTTP 401': 'remoteAuthFailed',
   'remote returned HTTP 403': 'remoteAuthFailed',
+  'remote returned HTTP 404': 'remoteNotFound',
   'remote returned HTTP 429': 'remoteRateLimited',
 };
+
+/**
+ * Statuses that share one message and are therefore matched by prefix.
+ *
+ * The plugin reports any non-200 status verbatim, so the 5xx family cannot be
+ * enumerated; left unmapped, a Chinese user would see the raw English phrase for
+ * the two most common setup mistakes (a wrong path and a failing gateway).
+ */
+const FETCH_REASON_PREFIX_KEYS: readonly [string, string][] = [
+  ['remote returned HTTP 5', 'remoteServerError'],
+  ['remote returned HTTP 4', 'remoteFailed'],
+];
 
 /**
  * Where the options currently on screen came from.
@@ -102,7 +115,9 @@ export function getCustomStatusKey(
 export function describeFetchReason(reason: string | undefined, t: Translate): string {
   if (!reason) return t('settingsPanel.models.fetchModelsFailed');
   const reasonKey = FETCH_REASON_KEYS[reason];
-  return reasonKey ? t(`settingsPanel.models.fetchReasons.${reasonKey}`) : reason;
+  if (reasonKey) return t(`settingsPanel.models.fetchReasons.${reasonKey}`);
+  const prefixKey = FETCH_REASON_PREFIX_KEYS.find(([prefix]) => reason.startsWith(prefix))?.[1];
+  return prefixKey ? t(`settingsPanel.models.fetchReasons.${prefixKey}`) : reason;
 }
 
 /** Dedupe key for a preset fetch: the preset identity plus the key that was used. */

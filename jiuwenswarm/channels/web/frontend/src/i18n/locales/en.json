@@ -711,7 +711,9 @@
         "nonJsonBody": "The remote response is not JSON",
         "bodyTooLarge": "The remote response is too large",
         "remoteAuthFailed": "Invalid API key or auth mismatch (HTTP 401/403)",
-        "remoteRateLimited": "Rate limited (HTTP 429), retry later"
+        "remoteNotFound": "The endpoint does not exist (HTTP 404); check the address path",
+        "remoteRateLimited": "Rate limited (HTTP 429), retry later",
+        "remoteServerError": "The remote service failed (HTTP 5xx); retry later or contact the gateway owner"
       },
       "vendorGroups": {
         "token_plan": "Token Plan",
